@@ -16,8 +16,62 @@ div#welcome
     padding : 0.2em;
 }
 
-div#orders
+div#main
 {
+}
+
+div#leftcolumn
+{
+    float : left;
+    width : 50%;
+}
+
+div#rightcolumn
+{
+    float : right;
+    width : 50%;
+}
+
+div#customer_orders
+{
+    margin : 0.2em;
     color : black;
-    margin : 0.3em;
+    background-color : lightblue;
+}
+
+
+div#order_form
+{
+    margin : 0.2em;
+    background-color : lightblue;
+}
+
+div#order_form div.field
+{
+    height : 30px;
+}
+
+div#order_form div.field div.name
+{
+    width : 50%;
+    float : left;
+}
+
+div#order_form div.field select
+{
+    width : 50%;
+    float : left;
+}
+
+div#order_form div.field input
+{
+    width : 50%;
+    float : left;
+}
+
+div#order_form div.field button
+{
+    width : 50%;
+    height : 20px;
+    float : right;
 }
