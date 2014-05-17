@@ -1,6 +1,7 @@
 import json
 
 from django.shortcuts import render
+from django.shortcuts import render_to_response
 from django.http import HttpResponse
 
 from barrista.models import Order
@@ -18,7 +19,7 @@ def jsonify(obj):
 
 
 def index(request):
-    return HttpResponse("Welcome to Starbucks")
+    return render_to_response("index.html")
 
 
 def orders(request):
