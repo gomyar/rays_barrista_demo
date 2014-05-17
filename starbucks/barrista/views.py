@@ -14,6 +14,11 @@ def jsonify(obj):
             product_id=obj.product.product_id,
             customer_name=obj.customer_name,
         )
+    if type(obj) is Product:
+        return dict(
+            product_id=obj.product_id,
+            name=obj.name,
+        )
     else:
         return obj
 
@@ -32,3 +37,9 @@ def orders(request):
     else:
         return HttpResponse(json.dumps(list(Order.objects.all()),
             default=jsonify), content_type="application/json")
+
+
+def products(request):
+    product_dict = dict((p.product_id, p.name) for p in Product.objects.all())
+    return HttpResponse(json.dumps(product_dict, default=jsonify),
+        content_type="application/json")

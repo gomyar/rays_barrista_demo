@@ -34,3 +34,7 @@ class BarristaTest(TestCase):
         response = self.client.get("/orders")
         self.assertEquals('[{"product_id": "latte", "customer_name": "bob"}]',
             response.content)
+
+    def testGetProducts(self):
+        self.assertEquals('{"cappacino": "Cappacino", "latte": "Latte"}',
+            self.client.get("/products").content)
