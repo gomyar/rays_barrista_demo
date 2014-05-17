@@ -11,7 +11,7 @@ from barrista.models import Product
 def jsonify(obj):
     if type(obj) is Order:
         return dict(
-            product_id=obj.product_id,
+            product_id=obj.product.product_id,
             customer_name=obj.customer_name,
         )
     else:
@@ -27,7 +27,8 @@ def orders(request):
         product = Product.objects.get(product_id=request.POST['product_id'])
         order = Order.objects.create(product=product,
             customer_name=request.POST['customer_name'])
-        return HttpResponse(json.dumps(order, default=jsonify))
+        return HttpResponse(json.dumps(order, default=jsonify),
+            content_type="application/json")
     else:
         return HttpResponse(json.dumps(list(Order.objects.all()),
-            default=jsonify))
+            default=jsonify), content_type="application/json")
