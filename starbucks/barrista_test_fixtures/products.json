@@ -1,0 +1,18 @@
+[
+{
+    "pk": 1, 
+    "model": "barrista.product", 
+    "fields": {
+        "name": "Cappacino", 
+        "product_id": "cappacino"
+    }
+},
+{
+    "pk": 2, 
+    "model": "barrista.product", 
+    "fields": {
+        "name": "Latte", 
+        "product_id": "latte"
+    }
+}
+]
