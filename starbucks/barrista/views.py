@@ -6,23 +6,14 @@ from django.http import HttpResponse
 
 from barrista.models import Order
 from barrista.models import Product
+from barrista.mongodb import MongoDB
+from barrista.container import Container
 
+import jsonify
 
-def jsonify(obj):
-    if type(obj) is Order:
-        return dict(
-            product_id=obj.product.product_id,
-            customer_name=obj.customer_name,
-            order_id=str(obj.id),
-        )
-    if type(obj) is Product:
-        return dict(
-            product_id=obj.product_id,
-            name=obj.name,
-            order_id=str(obj.id),
-        )
-    else:
-        return obj
+mongodb = MongoDB()
+mongodb.init_mongo()
+container = Container(mongodb)
 
 
 def index(request):
@@ -31,23 +22,27 @@ def index(request):
 
 def orders(request):
     if request.method == "POST":
-        product = Product.objects.get(product_id=request.POST['product_id'])
-        order = Order.objects.create(product=product,
+        product = container.get_product(request.POST['product_id'])
+        order = Order(product=product,
             customer_name=request.POST['customer_name'])
-        return HttpResponse(json.dumps(order, default=jsonify),
+        container.save_order(order)
+        return HttpResponse(json.dumps(order, default=jsonify.encode),
             content_type="application/json")
     else:
-        return HttpResponse(json.dumps(list(Order.objects.all()),
-            default=jsonify), content_type="application/json")
+        return HttpResponse(json.dumps(container.get_all_orders(),
+            default=jsonify.encode), content_type="application/json")
 
 
 def orders_byid(request, order_id):
-    order = Order.objects.get(id=int(order_id))
-    order.delete()
+    if container.order_exists(order_id):
+        container.remove_order(order_id)
+    else:
+        order = Order.objects.get(id=int(order_id))
+        order.delete()
     return HttpResponse("ok")
 
 
 def products(request):
     product_dict = dict((p.product_id, p.name) for p in Product.objects.all())
-    return HttpResponse(json.dumps(product_dict, default=jsonify),
+    return HttpResponse(json.dumps(product_dict, default=jsonify.encode),
         content_type="application/json")

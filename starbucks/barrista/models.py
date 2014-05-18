@@ -16,3 +16,7 @@ class Order(models.Model):
     def __unicode__(self):
         return "<Order %s for %s>" % (self.product.product_id,
             self.customer_name)
+
+    @property
+    def order_id(self):
+        return str(self._id) if hasattr(self, "_id") else str(self.id)

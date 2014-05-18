@@ -1,4 +1,6 @@
 
+import json
+
 from barrista.models import Product
 from barrista.models import Order
 
@@ -20,22 +22,49 @@ class Container(object):
         if not data:
             return Order.objects.get(id=int(order_id))
         else:
-            return self.build(data)
+            return self.dict_to_obj(data)
+
+    def get_all_orders(self):
+        old_orders = list(Order.objects.all())
+        order_data = self.dbase.find("orders")
+        order_data = [self._decode_id(order) for order in order_data]
+        new_orders = self.dict_to_obj(order_data)
+        return old_orders + new_orders
+
+    def remove_order(self, order_id):
+        self.dbase.remove_object("orders", order_id)
+
+    def _decode_id(self, data):
+        data['_id'] = str(data.get('_id'))
+        return data
+
+    def order_exists(self, order_id):
+        return self.dbase.object_exists('orders', order_id)
 
     def save_order(self, order):
-        data = self.serialize(order)
-        self.dbase.save_object("orders", data)
+        self.save_object("orders", order)
+
+    def save_object(self, collection_name, obj):
+        data = self.obj_to_dict(obj)
+        obj._id = self.dbase.save_object(collection_name, data)
 
     def get_product(self, product_id):
-        data = self.dbase.find("products", product_id=product_id)
+        data = self.dbase.find_one("products", product_id=product_id)
         if not data:
             return Product.objects.get(product_id=product_id)
         else:
-            return self.build(data)
+            return self.dict_to_obj(data)
 
     def save_product(self, product):
-        data = self.serialize(product)
-        self.dbase.save_object("products", data)
+        self.save_object("products", product)
+
+    def obj_to_dict(self, pyobject):
+        encoded_str = json.dumps(pyobject, default=self.serialize, indent=4)
+        return json.loads(encoded_str)
+
+    def dict_to_obj(self, obj_dict):
+        obj_str = json.dumps(obj_dict)
+        return json.loads(obj_str, object_hook=self.build)
 
     def build(self, data):
         if "__type__" in data:
@@ -58,8 +87,10 @@ class Container(object):
         return Product(product_id=data['product_id'], name=data['name'])
 
     def _build_order(self, data):
-        return Order(customer_name=data['customer_name'],
+        order = Order(customer_name=data['customer_name'],
             product=self.get_product(data['product_id']))
+        order._id = data.get('_id')
+        return order
 
     def _serialize_product(self, product):
         return dict(product_id=product.product_id, name=product.name)

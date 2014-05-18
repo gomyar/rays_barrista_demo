@@ -13,18 +13,35 @@ class MockMongo(object):
             products=dict(),
         )
 
-    def get_object(self, collection, object_id):
-        return self.collections[collection][object_id]
+    def get_object(self, collection_name, object_id):
+        return self.collections[collection_name][object_id]
 
-    def save_object(self, collection, data):
-        new_id = "%s_%s" % (collection, len(self.collections[collection]))
-        self.collections[collection][new_id] = data
+    def save_object(self, collection_name, data):
+        new_id = "%s_%s" % (collection_name,
+            len(self.collections[collection_name]))
+        self.collections[collection_name][new_id] = data
+        return new_id
 
-    def find(self, collection, **kwargs):
-        for obj in self.collections[collection].values():
+    def find_one(self, collection_name, **kwargs):
+        found = self.find(collection_name, **kwargs)
+        if found:
+            return found[0]
+        else:
+            return None
+
+    def find(self, collection_name, **kwargs):
+        found = []
+        for obj in self.collections[collection_name].values():
             if all((k, v) in obj.items() for (k, v) in kwargs.items()):
-                return obj
-        return None
+                found.append(obj)
+        found = [f.copy() for f in found]
+        return found
+
+    def object_exists(self, collection_name, object_id):
+        return object_id in self.collections[collection_name]
+
+    def remove_object(self, collection_name, object_id):
+        self.collections[collection_name].pop(object_id)
 
 
 class ContainerTest(TestCase):
@@ -70,6 +87,7 @@ class ContainerTest(TestCase):
         self.assertEquals({'orders_0': {'__type__': 'Order',
             'product_id': 'latte', 'customer_name': 'Ned'}},
             self.dbase.collections['orders'])
+        self.assertTrue(self.container.order_exists('orders_0'))
 
     def testGetObjectFromOldDbase(self):
         self.dbase.collections['products']['products_0'] = {
@@ -95,3 +113,24 @@ class ContainerTest(TestCase):
         self.assertEquals("Bob", order_bob.customer_name)
         self.assertEquals("Frappacino", order_ned.product.name)
         self.assertEquals("Ned", order_ned.customer_name)
+
+    def testGetAllOrders(self):
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Ned"}
+        self.dbase.collections['orders']['orders_1'] = {"__type__": "Order",
+            "product_id": "cappacino", "customer_name": "Bob"}
+
+        self.assertEquals(2, len(self.container.get_all_orders()))
+
+        product = Product.objects.create(product_id="prod1", name="Frappacino")
+        Order.objects.create(product=product, customer_name="Bill")
+
+        self.assertEquals(3, len(self.container.get_all_orders()))
+
+    def testRemoveOrder(self):
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Bob"}
+
+        self.container.remove_order("orders_0")
+
+        self.assertEquals(0, len(self.dbase.collections['orders']))
