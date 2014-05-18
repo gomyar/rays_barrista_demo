@@ -9,7 +9,6 @@ class Product(models.Model):
         return "<Product %s - %s>" % (self.product_id, self.name)
 
 
-# Create your models here.
 class Order(models.Model):
     customer_name = models.CharField(max_length=255)
     product = models.ForeignKey(Product)

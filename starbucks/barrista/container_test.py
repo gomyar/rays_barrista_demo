@@ -16,6 +16,10 @@ class MockMongo(object):
     def get_object(self, collection, object_id):
         return self.collections[collection][object_id]
 
+    def save_object(self, collection, data):
+        new_id = "%s_%s" % (collection, len(self.collections[collection]))
+        self.collections[collection][new_id] = data
+
     def find(self, collection, **kwargs):
         for obj in self.collections[collection].values():
             if all((k, v) in obj.items() for (k, v) in kwargs.items()):
@@ -44,3 +48,11 @@ class ContainerTest(TestCase):
         self.assertEquals(Order, type(order))
         self.assertEquals("latte", order.product.product_id)
         self.assertEquals("Bob", order.customer_name)
+
+    def testSaveProduct(self):
+        product = Product(product_id="prod1", name="Frappacino")
+        self.container.save_product(product)
+
+        self.assertEquals({'products_0': {'__type__': 'Product',
+            'name': 'Frappacino', 'product_id': 'prod1'}},
+            self.dbase.collections['products'])
