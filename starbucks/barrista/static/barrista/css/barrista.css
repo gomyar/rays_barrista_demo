@@ -36,9 +36,39 @@ div#customer_orders
 {
     margin : 0.2em;
     color : black;
+}
+
+div#customer_orders div.order
+{
+    margin : 0.1em;
+    height : 1.5em;
     background-color : lightblue;
 }
 
+div#customer_orders div.order div.product
+{
+    float : left;
+    margin : 0.2em;
+    font-weight : bold;
+}
+
+div#customer_orders div.order div.for
+{
+    float : left;
+    margin : 0.2em;
+}
+
+div#customer_orders div.order div.customer
+{
+    float : left;
+    margin : 0.2em;
+    font-weight : bold;
+}
+
+div#customer_orders div.order button.order_served
+{
+    float : right;
+}
 
 div#order_form
 {

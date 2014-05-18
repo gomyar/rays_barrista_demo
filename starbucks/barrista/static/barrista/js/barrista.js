@@ -47,13 +47,27 @@ barrista.OrderGui.prototype.load_orders = function()
 
 barrista.OrderGui.prototype.orders_loaded = function(data)
 {
+    var self = this;
     for (var o in data)
     {
         var order = data[o];
         this.customer_orders.append(
-            $("<div>", {"class": "order", "text": this.products[order.product_id] + " for " + order.customer_name})
+            $("<div>", {"class": "order", "id": "order_" + order.order_id}).append(
+                $("<div>", {"class": "product", "text": this.products[order.product_id]}),
+                $("<div>", {"class": "for", "text": "for"}),
+                $("<div>", {"class": "customer", "text": order.customer_name}),
+                $("<button>", {"class": "order_served", "text": "Served"}).bind("click", {"order_id": order.order_id}, (function(e){
+                    self.send_order_made(e.data.order_id);
+                    $("#order_" + e.data.order_id).remove();
+                }))
+            )
         );
     }
+}
+
+barrista.OrderGui.prototype.send_order_made = function(order_id)
+{
+    network.post("/orders/" + order_id, {"action": "made"});
 }
 
 barrista.OrderGui.prototype.show_order_form = function()

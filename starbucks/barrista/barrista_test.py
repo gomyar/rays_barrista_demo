@@ -20,7 +20,8 @@ class BarristaTest(TestCase):
     def testMakeOrderThroughAPI(self):
         response = self.client.post("/orders", {"product_id": "latte",
             "customer_name": "bob"})
-        self.assertEquals('{"product_id": "latte", "customer_name": "bob"}',
+        self.assertEquals(
+            '{"order_id": "1", "product_id": "latte", "customer_name": "bob"}',
             response.content)
 
         self.assertEquals(200, response.status_code)
@@ -32,9 +33,17 @@ class BarristaTest(TestCase):
         latte = Product.objects.get(product_id="latte")
         Order.objects.create(product=latte, customer_name="bob")
         response = self.client.get("/orders")
-        self.assertEquals('[{"product_id": "latte", "customer_name": "bob"}]',
+        self.assertEquals(
+            '[{"order_id": "1", "product_id": "latte", "customer_name": "bob"}]',
             response.content)
 
     def testGetProducts(self):
         self.assertEquals('{"cappacino": "Cappacino", "latte": "Latte"}',
             self.client.get("/products").content)
+
+    def testOrderServed(self):
+        latte = Product.objects.get(product_id="latte")
+        Order.objects.create(product=latte, customer_name="bob")
+        response = self.client.post("/orders/1", {"action": "served"})
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(0, len(Order.objects.all()))
