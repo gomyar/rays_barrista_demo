@@ -12,11 +12,16 @@ class Container(object):
         )
         self.serializers = dict(
             Product=self._serialize_product,
+            Order=self._serialize_order,
         )
 
     def get_order_by_id(self, order_id):
         data = self.dbase.get_object("orders", order_id)
         return self.build(data)
+
+    def save_order(self, order):
+        data = self.serialize(order)
+        self.dbase.save_object("orders", data)
 
     def get_product(self, product_id):
         data = self.dbase.find("products", product_id=product_id)
@@ -52,3 +57,7 @@ class Container(object):
 
     def _serialize_product(self, product):
         return dict(product_id=product.product_id, name=product.name)
+
+    def _serialize_order(self, order):
+        return dict(product_id=order.product.product_id,
+            customer_name=order.customer_name)

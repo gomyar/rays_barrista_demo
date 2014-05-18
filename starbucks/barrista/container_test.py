@@ -56,3 +56,15 @@ class ContainerTest(TestCase):
         self.assertEquals({'products_0': {'__type__': 'Product',
             'name': 'Frappacino', 'product_id': 'prod1'}},
             self.dbase.collections['products'])
+
+    def testSaveOrder(self):
+        self.dbase.collections['products']['product1'] = {
+            "__type__": "Product", "product_id": "latte", "name": "Latte"}
+        product = Product(product_id="latte", name="Latte")
+        order = Order(product=product, customer_name="Ned")
+
+        self.container.save_order(order)
+
+        self.assertEquals({'orders_0': {'__type__': 'Order',
+            'product_id': 'latte', 'customer_name': 'Ned'}},
+            self.dbase.collections['orders'])
