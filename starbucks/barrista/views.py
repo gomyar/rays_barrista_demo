@@ -22,10 +22,8 @@ def index(request):
 
 def orders(request):
     if request.method == "POST":
-        product = container.get_product(request.POST['product_id'])
-        order = Order(product=product,
-            customer_name=request.POST['customer_name'])
-        container.save_order(order)
+        order = container.create_order(request.POST['product_id'],
+            request.POST['customer_name'])
         return HttpResponse(json.dumps(order, default=jsonify.encode),
             content_type="application/json")
     else:
@@ -34,15 +32,16 @@ def orders(request):
 
 
 def orders_byid(request, order_id):
-    if container.order_exists(order_id):
-        container.remove_order(order_id)
+    if request.method == "POST":
+        container.order_complete(order_id)
+        return HttpResponse("ok")
     else:
-        order = Order.objects.get(id=int(order_id))
-        order.delete()
-    return HttpResponse("ok")
+        return HttpResponse(json.dumps(container.get_order_by_id(order_id),
+            default=jsonify.encode), content_type="application/json")
 
 
 def products(request):
-    product_dict = dict((p.product_id, p.name) for p in Product.objects.all())
+    product_dict = dict((p.product_id, p.name) for p in \
+        container.get_all_products())
     return HttpResponse(json.dumps(product_dict, default=jsonify.encode),
         content_type="application/json")

@@ -24,6 +24,9 @@ class Container(object):
         else:
             return self.dict_to_obj(data)
 
+    def get_all_products(self):
+        return Product.objects.all()
+
     def get_all_orders(self):
         old_orders = list(Order.objects.all())
         order_data = self.dbase.find("orders")
@@ -33,6 +36,19 @@ class Container(object):
 
     def remove_order(self, order_id):
         self.dbase.remove_object("orders", order_id)
+
+    def create_order(self, product_id, customer_name):
+        product = self.get_product(product_id)
+        order = Order(product=product, customer_name=customer_name)
+        self.save_order(order)
+        return order
+
+    def order_complete(self, order_id):
+        if self.order_exists(order_id):
+            self.remove_order(order_id)
+        else:
+            order = Order.objects.get(id=int(order_id))
+            order.delete()
 
     def _decode_id(self, data):
         data['_id'] = str(data.get('_id'))

@@ -66,3 +66,13 @@ class BarristaTest(TestCase):
         self.assertEquals(200, response.status_code)
 
         self.assertEquals(0, len(self.dbase.collections['orders']))
+
+    def testViewOrder(self):
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Bob"}
+
+        response = self.client.get("/orders/orders_0")
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(
+            '{"order_id": "None", "product_id": "latte", '
+            '"customer_name": "Bob"}', response.content)
