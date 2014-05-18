@@ -17,7 +17,10 @@ class Container(object):
 
     def get_order_by_id(self, order_id):
         data = self.dbase.get_object("orders", order_id)
-        return self.build(data)
+        if not data:
+            return Order.objects.get(id=int(order_id))
+        else:
+            return self.build(data)
 
     def save_order(self, order):
         data = self.serialize(order)
@@ -25,7 +28,10 @@ class Container(object):
 
     def get_product(self, product_id):
         data = self.dbase.find("products", product_id=product_id)
-        return self.build(data)
+        if not data:
+            return Product.objects.get(product_id=product_id)
+        else:
+            return self.build(data)
 
     def save_product(self, product):
         data = self.serialize(product)

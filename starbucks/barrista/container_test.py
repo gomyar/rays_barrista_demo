@@ -28,6 +28,8 @@ class MockMongo(object):
 
 
 class ContainerTest(TestCase):
+    fixtures = ['barrista_test_fixtures/products.json']
+
     def setUp(self):
         self.dbase = MockMongo()
         self.container = Container(self.dbase)
@@ -68,3 +70,28 @@ class ContainerTest(TestCase):
         self.assertEquals({'orders_0': {'__type__': 'Order',
             'product_id': 'latte', 'customer_name': 'Ned'}},
             self.dbase.collections['orders'])
+
+    def testGetObjectFromOldDbase(self):
+        self.dbase.collections['products']['products_0'] = {
+            "__type__": "Product", "product_id": "frap", "name": "Frappacino"}
+        product_frap = self.container.get_product("frap")
+        product_latte = self.container.get_product("latte")
+
+        self.assertEquals("Frappacino", product_frap.name)
+        self.assertEquals("Latte", product_latte.name)
+
+    def testGetOrderFromOldDbase(self):
+        self.dbase.collections['products']['products_0'] = {
+            "__type__": "Product", "product_id": "frap", "name": "Frappacino"}
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Bob"}
+        self.dbase.collections['orders']['orders_1'] = {"__type__": "Order",
+            "product_id": "frap", "customer_name": "Ned"}
+
+        order_bob = self.container.get_order_by_id("orders_0")
+        order_ned = self.container.get_order_by_id("orders_1")
+
+        self.assertEquals("Latte", order_bob.product.name)
+        self.assertEquals("Bob", order_bob.customer_name)
+        self.assertEquals("Frappacino", order_ned.product.name)
+        self.assertEquals("Ned", order_ned.customer_name)
