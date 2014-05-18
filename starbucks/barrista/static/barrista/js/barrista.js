@@ -1,108 +1,112 @@
 
 var barrista = {};
 
-barrista.OrderGui = function(order_div)
-{
-    this.orders_div = order_div;
-}
+barrista.orders_div = null;
+barrista.customer_orders_div = null;
+barrista.order_form = null;
 
-barrista.OrderGui.prototype.show = function()
+barrista.products = {};
+barrista.orders = [];
+
+barrista.show = function()
 {
-    this.orders_div.empty();
-    this.customer_orders = $("<div>", {"id": "customer_orders"});
-    this.order_form = $("<div>", {"id": "order_form"});
-    this.orders_div.append(
+    barrista.orders_div.empty();
+    barrista.customer_orders_div = $("<div>", {"id": "customer_orders"});
+    barrista.order_form = $("<div>", {"id": "order_form"});
+    barrista.orders_div.append(
         $("<div>", {"id": "leftcolumn"}).append(
-            this.customer_orders
+            barrista.customer_orders_div
         ),
         $("<div>", {"id": "rightcolumn"}).append(
-            this.order_form
+            barrista.order_form
         )
     );
-    this.load_products();
+    barrista.load_products();
 }
 
-barrista.OrderGui.prototype.load_products = function()
+barrista.load_products = function()
 {
-    var self = this;
     network.get("/products", function(data){
-        self.products_loaded(data);
-        self.load_orders();
-        self.show_order_form();
+        barrista.products_loaded(data);
+        barrista.load_orders();
+        barrista.show_order_form();
     });
 }
 
-barrista.OrderGui.prototype.products_loaded = function(data)
+barrista.products_loaded = function(data)
 {
-    this.products = data;
+    barrista.products = data;
 }
 
-barrista.OrderGui.prototype.load_orders = function()
+barrista.load_orders = function()
 {
-    var self = this;
     network.get("/orders", function(data){
-        self.orders_loaded(data);
+        barrista.orders_loaded(data);
     });
 }
 
-barrista.OrderGui.prototype.orders_loaded = function(data)
+barrista.orders_loaded = function(data)
 {
-    var self = this;
     for (var o in data)
     {
         var order = data[o];
-        this.customer_orders.append(
+        barrista.customer_orders_div.append(
             $("<div>", {"class": "order", "id": "order_" + order.order_id}).append(
                 $("<div>", {"class": "product", "text": this.products[order.product_id]}),
                 $("<div>", {"class": "for", "text": "for"}),
                 $("<div>", {"class": "customer", "text": order.customer_name}),
                 $("<button>", {"class": "order_served", "text": "Served"}).bind("click", {"order_id": order.order_id}, (function(e){
-                    self.send_order_made(e.data.order_id);
-                    $("#order_" + e.data.order_id).remove();
+                    barrista.send_order_made(e.data.order_id);
                 }))
             )
         );
     }
 }
 
-barrista.OrderGui.prototype.send_order_made = function(order_id)
+barrista.reload_orders = function()
 {
-    network.post("/orders/" + order_id, {"action": "made"});
+    barrista.customer_orders_div.empty();
+    barrista.load_orders()
 }
 
-barrista.OrderGui.prototype.show_order_form = function()
+barrista.send_order_made = function(order_id)
 {
-    this.order_form.append(
+    network.post("/orders/" + order_id, {"action": "made"}, barrista.reload_orders);
+}
+
+barrista.show_order_form = function()
+{
+    barrista.order_form.append(
         $("<div>", {"id": "order_form"}).append(
             $("<div>", {"class": "field"}).append(
                 $("<div>", {"class": "name", "text": "Product"}),
-                this.build_products_select()
+                barrista.build_products_select()
             ),
             $("<div>", {"class": "field"}).append(
                 $("<div>", {"class": "name", "text": "Customer"}),
                 $("<input>", {"class": "customer"})
             ),
             $("<div>", {"class": "field"}).append(
-                $("<button>", {"class": "submit_order", "text": "Submit"}).click(this.submit_order)
+                $("<button>", {"class": "submit_order", "text": "Submit"}).click(barrista.submit_order)
             )
         )
     );
 }
 
-barrista.OrderGui.prototype.submit_order = function()
+barrista.submit_order = function()
 {
     var product_id = $("#order_form .products").find(":selected").val();
     var customer_name = $("#order_form .customer").val();
     console.log("Adding order: " + product_id + " " + customer_name);
-    network.post("/orders", {"product_id": product_id, "customer_name": customer_name});
+    network.post("/orders", {"product_id": product_id, "customer_name": customer_name}, barrista.reload_orders);
 }
 
-barrista.OrderGui.prototype.build_products_select = function()
+barrista.build_products_select = function()
 {
     var products_select = $("<select>", {"class": "products"});
-    for (var product_id in this.products)
+    for (var product_id in barrista.products)
     {
-        var product_name = this.products[product_id];
+        var product_name = barrista.products[product_id];
         products_select.append(
             $("<option>", {"class": "product", "value": product_id, "text": product_name})
         );
@@ -113,8 +117,8 @@ barrista.OrderGui.prototype.build_products_select = function()
 function init()
 {
     console.log("Init");
-    gui = new barrista.OrderGui($("#main"))
-    gui.show();
+    barrista.orders_div = $("#main");
+    barrista.show();
 }
 
 $(document).ready(init)
