@@ -1,5 +1,6 @@
 
 from django.test import TestCase
+from pymongo.helpers import bson
 
 from container import Container
 from barrista.models import Order
@@ -121,11 +122,19 @@ class ContainerTest(TestCase):
             "product_id": "cappacino", "customer_name": "Bob"}
 
         self.assertEquals(2, len(self.container.get_all_orders()))
+        self.assertEquals(2, len(self.container.get_all_products()))
 
         product = Product.objects.create(product_id="prod1", name="Frappacino")
         Order.objects.create(product=product, customer_name="Bill")
 
         self.assertEquals(3, len(self.container.get_all_orders()))
+        self.assertEquals(3, len(self.container.get_all_products()))
+
+        self.dbase.collections['products']['products_0'] = {
+            "__type__": "Product", "product_id": "frap", "name": "Frappacino"}
+
+        self.assertEquals(3, len(self.container.get_all_orders()))
+        self.assertEquals(4, len(self.container.get_all_products()))
 
     def testRemoveOrder(self):
         self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
@@ -134,3 +143,42 @@ class ContainerTest(TestCase):
         self.container.remove_order("orders_0")
 
         self.assertEquals(0, len(self.dbase.collections['orders']))
+
+    def testMigrate(self):
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Ned"}
+        self.dbase.collections['orders']['orders_1'] = {"__type__": "Order",
+            "product_id": "cappacino", "customer_name": "Bob"}
+        self.dbase.collections['products']['products_0'] = {
+            "__type__": "Product", "product_id": "mocha", "name": "Mocha"}
+        product = Product.objects.create(product_id="prod1", name="Frappacino")
+        Order.objects.create(product=product, customer_name="Bill")
+
+        self.assertEquals(2, len(self.dbase.collections['orders']))
+        self.assertEquals(1, len(Order.objects.all()))
+        self.assertEquals(1, len(self.dbase.collections['products']))
+        self.assertEquals(3, len(Product.objects.all()))
+
+        self.container.migrate()
+
+        self.assertEquals(3, len(self.dbase.collections['orders']))
+        self.assertEquals(0, len(Order.objects.all()))
+        self.assertEquals(4, len(self.dbase.collections['products']))
+        self.assertEquals(0, len(Product.objects.all()))
+
+    def testOddObjectIdBug(self):
+        self.dbase.collections['products']['5378cefd2e594f10a0000000'] = {
+            "_id": bson.ObjectId("5378cefd2e594f10a0000000"),
+            "__type__": "Product", "product_id": "mocha", "name": "Mocha"}
+        self.dbase.collections['orders']['5378cefd2e594f10a0000001'] = {
+            "__type__": "Order",
+            "_id": bson.ObjectId("5378cefd2e594f10a0000001"),
+            "product_id": "latte", "customer_name": "Ned"}
+
+        self.assertEquals("Mocha", self.container.get_product("mocha").name)
+        self.assertEquals("Ned",
+            self.container.get_order_by_id("5378cefd2e594f10a0000001").customer_name)
+
+
+    def testOldObjectExistsWithOldId(self):
+        self.assertFalse(self.container.order_exists("1"))

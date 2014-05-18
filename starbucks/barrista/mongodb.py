@@ -34,9 +34,15 @@ class MongoDB(object):
     def find_one(self, collection_name, **search_fields):
         return self._collection(collection_name).find_one(search_fields)
 
-    def object_exists(self, collection_name, object_id):
-        return bool(self.find_one(collection_name,
-            _id=bson.ObjectId(object_id)))
+    def object_exists(self, collection_name, object_id_str):
+        object_id = self._safe_build_object_id(object_id_str)
+        return bool(self.find_one(collection_name, _id=object_id))
+
+    def _safe_build_object_id(self, object_id_str):
+        try:
+            return bson.ObjectId(object_id_str)
+        except:
+            return None
 
     def remove_object(self, collection_name, object_id):
         self._collection(collection_name).remove(bson.ObjectId(object_id))

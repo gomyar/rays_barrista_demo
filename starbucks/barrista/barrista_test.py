@@ -1,5 +1,6 @@
 
 from django.test import TestCase
+from django.contrib.auth.models import User
 
 from barrista.models import Product
 from barrista.models import Order
@@ -76,3 +77,35 @@ class BarristaTest(TestCase):
         self.assertEquals(
             '{"order_id": "None", "product_id": "latte", '
             '"customer_name": "Bob"}', response.content)
+
+    def testMigrate(self):
+        self.adminuser = User.objects.create_superuser('admin', 'admin@test.com', 'pass')
+        self.adminuser.save()
+
+        self.client.login(username="admin", password="pass")
+
+        self.dbase.collections['orders']['orders_0'] = {"__type__": "Order",
+            "product_id": "latte", "customer_name": "Ned"}
+        self.dbase.collections['orders']['orders_1'] = {"__type__": "Order",
+            "product_id": "cappacino", "customer_name": "Bob"}
+        self.dbase.collections['products'] = {}
+        self.dbase.collections['products']['products_0'] = {
+            "__type__": "Product", "product_id": "mocha", "name": "Mocha"}
+        product = Product.objects.create(product_id="prod1", name="Frappacino")
+        Order.objects.create(product=product, customer_name="Bill")
+
+        self.assertEquals(2, len(self.dbase.collections['orders']))
+        self.assertEquals(1, len(Order.objects.all()))
+        self.assertEquals(1, len(self.dbase.collections['products']))
+        self.assertEquals(3, len(Product.objects.all()))
+
+        response = self.client.get("/migrate")
+        self.assertEquals(200, response.status_code)
+
+        response = self.client.post("/migrate", {"migrate": "yes"})
+        self.assertEquals(302, response.status_code)
+
+        self.assertEquals(3, len(self.dbase.collections['orders']))
+        self.assertEquals(0, len(Order.objects.all()))
+        self.assertEquals(4, len(self.dbase.collections['products']))
+        self.assertEquals(0, len(Product.objects.all()))

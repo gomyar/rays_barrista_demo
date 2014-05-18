@@ -11,10 +11,12 @@ class Container(object):
         self.builders = dict(
             Product=self._build_product,
             Order=self._build_order,
+#            ObjectId=self._build_object_id,
         )
         self.serializers = dict(
             Product=self._serialize_product,
             Order=self._serialize_order,
+#            ObjectId=self._serialize_object_id,
         )
 
     def get_order_by_id(self, order_id):
@@ -25,7 +27,11 @@ class Container(object):
             return self.dict_to_obj(data)
 
     def get_all_products(self):
-        return Product.objects.all()
+        old_products = list(Product.objects.all())
+        product_data = self.dbase.find("products")
+        product_data = [self._decode_id(product) for product in product_data]
+        new_products = self.dict_to_obj(product_data)
+        return old_products + new_products
 
     def get_all_orders(self):
         old_orders = list(Order.objects.all())
@@ -79,6 +85,8 @@ class Container(object):
         return json.loads(encoded_str)
 
     def dict_to_obj(self, obj_dict):
+        if '_id' in obj_dict:
+            obj_dict['_id'] = str(obj_dict['_id'])
         obj_str = json.dumps(obj_dict)
         return json.loads(obj_str, object_hook=self.build)
 
@@ -105,8 +113,11 @@ class Container(object):
     def _build_order(self, data):
         order = Order(customer_name=data['customer_name'],
             product=self.get_product(data['product_id']))
-        order._id = data.get('_id')
+        order._id = str(data.get('_id'))
         return order
+
+    def _build_object_id(self, data):
+        return bson.ObjectId(data)
 
     def _serialize_product(self, product):
         return dict(product_id=product.product_id, name=product.name)
@@ -114,3 +125,14 @@ class Container(object):
     def _serialize_order(self, order):
         return dict(product_id=order.product.product_id,
             customer_name=order.customer_name)
+
+    def _serialize_object_id(self, object_id):
+        return str(object_id)
+
+    def migrate(self):
+        for order in Order.objects.all():
+            self.save_order(order)
+            order.delete()
+        for product in Product.objects.all():
+            self.save_product(product)
+            product.delete()

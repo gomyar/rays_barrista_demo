@@ -3,6 +3,9 @@ import json
 from django.shortcuts import render
 from django.shortcuts import render_to_response
 from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import permission_required
 
 from barrista.models import Order
 from barrista.models import Product
@@ -45,3 +48,12 @@ def products(request):
         container.get_all_products())
     return HttpResponse(json.dumps(product_dict, default=jsonify.encode),
         content_type="application/json")
+
+
+@permission_required("is_staff")
+def migrate(request):
+    if request.method == "GET":
+        return render_to_response("migrate.html")
+    if request.method == "POST":
+        container.migrate()
+        return HttpResponseRedirect(reverse("migrate"))
